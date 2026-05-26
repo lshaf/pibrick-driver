@@ -1185,9 +1185,19 @@ static const struct drm_display_mode visionox_vtdr6110_mode = {
 	.height_mm = 75,
 };
 
+/*
+ * 60Hz reuses the 90Hz pixel clock AND horizontal/line timing unchanged --
+ * the panel's internal line latch is tuned for that line rate, and dropping
+ * the clock for 60Hz (the old "* 60") changed the per-line DSI rate, which
+ * made the right ~1/4 of every line flicker. Instead reach 60Hz purely by
+ * padding vertical blanking:  vtotal = clock / (htotal * 60)
+ *   = 133292kHz / (1168 * 60) ~= 1902 lines  (vs 1268 at 90Hz).
+ * Only the vertical blank grows; every horizontal/line parameter is byte-for-
+ * byte identical to the known-good 90Hz mode.
+ */
+#define _AMOLED_VTOTAL_60 1902
 static const struct drm_display_mode visionox_vtdr6110_mode_60 = {
-	.clock = (_AMOLED_HDISPLAY + _AMOLED_HFP + _AMOLED_HSYNC + _AMOLED_HBP) * (_AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC + _AMOLED_VBP) * 60 / 1000,
-	// .clock = 96000,
+	.clock = (_AMOLED_HDISPLAY + _AMOLED_HFP + _AMOLED_HSYNC + _AMOLED_HBP) * (_AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC + _AMOLED_VBP) * _AMOLED_REFRESH_RATE / 1000,
 	.hdisplay = _AMOLED_HDISPLAY,
 	.hsync_start = _AMOLED_HDISPLAY + _AMOLED_HFP,
 	.hsync_end = _AMOLED_HDISPLAY + _AMOLED_HFP + _AMOLED_HSYNC,
@@ -1195,7 +1205,7 @@ static const struct drm_display_mode visionox_vtdr6110_mode_60 = {
 	.vdisplay = _AMOLED_VDISPLAY,
 	.vsync_start = _AMOLED_VDISPLAY + _AMOLED_VFP,
 	.vsync_end = _AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC,
-	.vtotal = _AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC + _AMOLED_VBP,
+	.vtotal = _AMOLED_VTOTAL_60,
 	.width_mm = 65,
 	.height_mm = 75,
 };
