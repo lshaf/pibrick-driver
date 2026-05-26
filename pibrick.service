@@ -1,0 +1,15 @@
+[Unit]
+Description=piBrick Autobuild
+Before=basic.target
+After=local-fs.target sysinit.target
+DefaultDependencies=no
+
+[Service]
+ExecStart=/usr/lib/pibrick/build.sh
+WorkingDirectory=/usr/lib/pibrick
+Restart=on-failure
+User=root
+Group=root
+
+[Install]
+WantedBy=basic.target

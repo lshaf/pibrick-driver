@@ -1,0 +1,136 @@
+/dts-v1/;
+/plugin/;
+/ {
+	compatible = "brcm,bcm2712", "raspberrypi,5-compute-module", "raspberrypi,5-model-b";
+
+	fragment@0 {
+		target = <&dsi1>;
+		__overlay__{
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port {
+				dsi_out_port:endpoint {
+					remote-endpoint = <&panel_dsi_port>;
+					link-frequencies = /bits/ 64 <720000000>;
+				};
+			};
+
+			pibrick:pibrick@0 {
+				compatible    = "pibrick,amoled";
+				status        = "okay";
+				reg           = <0>;
+				reset-gpios   = <&gpio 20 1>;   // Dummy GPIO , Unused
+				te-gpios      = <&gpio 47 1>;   // 47 - dummy
+				rotation      = <180>;
+				port {
+					panel_dsi_port: endpoint {
+						remote-endpoint = <&dsi_out_port>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&gpio>;
+		__overlay__ {
+			pibrick_pins: pibrick_pins {
+				brcm,pins = <47>;
+				brcm,function = <1>; // out
+				brcm,pull = <1>; // off
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c0>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            ft5x06: touchscreen@38 {
+                compatible = "edt,edt-ft5406";
+                reg = <0x38>;
+                pinctrl-names = "default";
+                
+                /* Define the GPIOs */
+                //interrupt-parent = <&gpio>;
+                //interrupts = <18 2>; // GPIO 4, IRQ_TYPE_EDGE_FALLING
+                reset-gpios = <&gpio 17 1>; // GPIO 17, GPIO_ACTIVE_LOW
+                
+                /* Common touch properties */
+                touchscreen-size-x = <1080>; 
+                touchscreen-size-y = <1920>;
+
+				/* Optional: Link to the DSI panel if the symbol exists */
+                panel = <&pibrick>;
+
+                /* Standard cleanup for high-res AMOLED touch response */
+				// polling-delay-ms = <20>;
+				// touchscreen-swapped-x-y;
+				touchscreen-inverted-y;
+				touchscreen-inverted-x;
+
+                touchscreen-fuzz = <3>;
+                touchscreen-average-samples = <4>;
+				max-touch-number = <5>;
+            };
+        };
+//		target = <&i2c0>;
+//		__overlay__ {
+//			#address-cells = <1>;
+//			#size-cells = <0>;
+//			status = "okay";
+//
+//			edt_ft5x06: edt_ft5x06@38 {
+//				compatible = "edt,edt-ft5x06";
+//				reg = <0x38>;
+//				
+//				pinctrl-names = "default";
+//
+//				interrupt-parent = <&gpio>;
+//				interrupts = <4 2>;
+//				reset-gpio = <&gpio 17 1>;
+//				irq-gpio = <&gpio 4 2>; 
+//
+//				panel = <&pibrick>;
+//
+//				max-touch-number = <5>;
+//				display-coords = <0 0 1080 1920>;
+//				pos-swap = <0>;
+//				posx-reverse = <0>;
+//				posy-reverse = <0>;
+//			};
+//		};
+	};
+	
+	fragment@3 {
+		target = <&i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			bq25890: bq25890@6a {
+				compatible = "ti,bq25890";
+				reg = <0x6a>;
+				
+				ti,battery-regulation-voltage = <4100000>;
+				ti,charge-current = <4000000>;
+				ti,termination-current = <50000>;
+				ti,precharge-current = <128000>;
+				ti,minimum-sys-voltage = <3600000>;
+				ti,boost-voltage = <5000000>;
+				ti,boost-max-current = <3000000>;
+				ti,use-ilim-pin;
+				ti,thermal-regulation-threshold = <120>;
+
+				interrupt-parent = <&gpio>;
+				interrupts = <26 2>;
+			};
+		};
+	};
+	
+};

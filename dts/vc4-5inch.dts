@@ -1,0 +1,118 @@
+/dts-v1/;
+/plugin/;
+/ {
+	compatible = "brcm,bcm2712", "raspberrypi,5-compute-module", "raspberrypi,5-model-b";
+
+	fragment@0 {
+		target = <&dsi1>;
+		__overlay__{
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port {
+				dsi_out_port:endpoint {
+					remote-endpoint = <&panel_dsi_port>;
+				};
+			};
+
+			pibrick:pibrick@0 {
+				compatible    = "pibrick,amoled";
+				status        = "okay";
+				reg           = <0>;
+				reset-gpios   = <&gpio 20 1>;   // Dummy GPIO , Unused
+				te-gpios      = <&gpio 47 1>;   // 47 - dummy
+				rotation      = <0>;
+				port {
+					panel_dsi_port: endpoint {
+						remote-endpoint = <&dsi_out_port>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&gpio>;
+		__overlay__ {
+			pibrick_pins: pibrick_pins {
+				brcm,pins = <47>;
+				brcm,function = <1>; // out
+				brcm,pull = <1>; // off
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path = "/";
+		__overlay__ {
+			touch_i2c_gpio: touch_i2c_gpio {
+				compatible = "i2c-gpio";
+				gpios = <&gpio 1 0 /* sda */
+					&gpio 0 0 /* scl */
+				>;
+				i2c-gpio,delay-us = <2>;        /* ~100 kHz */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				status = "okay";
+				i2c-max-frequency = <100000>;
+			};
+		};
+	};
+
+	fragment@3 {
+		//target = <&i2c0>;
+		target = <&touch_i2c_gpio>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			hynitron@5A {
+				compatible = "hyn,66xx";
+				// reg = <0x5A>;
+				reg = <0x5A>;
+
+				interrupt-parent = <&gpio>;
+				interrupts = <4 2>;
+				reset-gpio = <&gpio 17 1>;
+				irq-gpio = <&gpio 4 2>; 
+				
+				panel = <&pibrick>;
+
+				max-touch-number = <5>;
+				display-coords = <0 0 1080 1240>;
+				pos-swap = <1>;
+				posx-reverse = <0>;
+				posy-reverse = <0>;
+			};
+		};
+	};
+	
+	fragment@4 {
+		target = <&i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			bq25890: bq25890@6a {
+				compatible = "ti,bq25890";
+				reg = <0x6a>;
+				
+				ti,battery-regulation-voltage = <4100000>;
+				ti,charge-current = <4000000>;
+				ti,termination-current = <50000>;
+				ti,precharge-current = <128000>;
+				ti,minimum-sys-voltage = <3600000>;
+				ti,boost-voltage = <5000000>;
+				ti,boost-max-current = <3000000>;
+				ti,use-ilim-pin;
+				ti,thermal-regulation-threshold = <120>;
+
+				interrupt-parent = <&gpio>;
+				interrupts = <26 2>;
+			};
+		};
+	};
+	
+};
