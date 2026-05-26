@@ -555,6 +555,17 @@ static irqreturn_t hyn_irq_handler(int irq, void *data)
     return IRQ_HANDLED;
 }
 
+/*
+ * Kernel 6.18: the fb-notifier API (FB_EVENT_BLANK, fb_register_client) was
+ * removed from mainline (~6.2), and drm_panel_notifier_register is gone too.
+ * This driver's suspend-on-screen-blank relied on them. Force the standard
+ * dev_pm_ops suspend/resume path instead (defined below, wired via .driver.pm
+ * when CONFIG_FB/CONFIG_DRM are unset) by undef'ing those macros for this file.
+ * Touch + keypad keep working; suspend/resume now goes through system PM.
+ */
+#undef CONFIG_FB
+#undef CONFIG_DRM
+
 #if defined(CONFIG_FB) || defined(CONFIG_DRM)
 #ifndef FB_EARLY_EVENT_BLANK
 #define FB_EARLY_EVENT_BLANK  FB_EVENT_BLANK
@@ -603,7 +614,7 @@ static int fb_notifier_callback(struct notifier_block *self, unsigned long event
 static int hyn_pm_suspend(struct device *dev)
 {
     hyn_suspend(dev);
-    return 0
+    return 0;
 }
 static int hyn_pm_resume(struct device *dev)
 {
