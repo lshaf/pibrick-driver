@@ -1,11 +1,15 @@
 [Unit]
-Description=piBrick Autobuild
+Description=piBrick Autobuild + Button Service
 Before=basic.target
 After=local-fs.target sysinit.target
 DefaultDependencies=no
 
 [Service]
-ExecStart=/usr/lib/pibrick/build.sh
+Type=simple
+# Build (and, on kernel change, reboot) before the button monitor takes over.
+# build.sh also (re)compiles the pibrickbtn binary that ExecStart runs.
+ExecStartPre=/usr/lib/pibrick/build.sh
+ExecStart=/usr/local/bin/pibrickbtn
 WorkingDirectory=/usr/lib/pibrick
 Restart=on-failure
 User=root

@@ -2,6 +2,22 @@
 cd "$(dirname "$0")"
 root="$(pwd)"
 
+# Button monitor: compile the pibrickbtn daemon that pibrick.service's
+# ExecStart runs (the monitor_keydown loop). Cheap, and independent of the
+# kernel version, so do it on every boot if the source is newer than the
+# installed binary (or the binary is missing).
+btn_src="$root/button/pibrickbtn.c"
+btn_bin="/usr/local/bin/pibrickbtn"
+if [ -f "$btn_src" ] && { [ ! -x "$btn_bin" ] || [ "$btn_src" -nt "$btn_bin" ]; }; then
+	echo ">>> compiling pibrickbtn ..."
+	if gcc "$btn_src" -o "$btn_bin"; then
+		chmod +x "$btn_bin"
+		echo ">>> pibrickbtn OK"
+	else
+		echo "!!! pibrickbtn BUILD FAILED"
+	fi
+fi
+
 if [ "$(cat /etc/pibrick.lastbuild 2>/dev/null)" == "$(uname -r)" ]; then
 	echo "No Linux Kernel Update."
 	exit 0

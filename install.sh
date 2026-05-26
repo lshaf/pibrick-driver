@@ -1,13 +1,20 @@
 #!/bin/bash
 
-# Install piBrick autoBuild Kernel Modules
+# Install piBrick autoBuild Kernel Modules + Button Service
 mkdir -p /usr/lib/pibrick/
 cp -rf ./* /usr/lib/pibrick/
 cp /usr/lib/pibrick/pibrick.service /etc/systemd/system/
 chmod +x /usr/lib/pibrick/build.sh
+
+# Button action scripts live in /etc/pibrick (user-editable). Stage them before
+# the service starts so the button monitor can find them on first press.
+cp -r /usr/lib/pibrick/button/etc/pibrick /etc/
+
 systemctl daemon-reload
 systemctl enable pibrick.service
 cd /usr/lib/pibrick/
+# build.sh builds the kernel modules and compiles the pibrickbtn binary;
+# pibrick.service then runs that binary (the button monitor) as ExecStart.
 /usr/lib/pibrick/build.sh
 systemctl start pibrick.service
 
