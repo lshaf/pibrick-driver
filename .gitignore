@@ -18,3 +18,6 @@ Module.symvers
 # macOS junk (AppleDouble / metadata)
 ._*
 .DS_Store
+
+# Source-delivery archives (redundant with the tracked tree)
+*.zip
