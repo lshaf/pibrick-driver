@@ -1186,26 +1186,26 @@ static const struct drm_display_mode visionox_vtdr6110_mode = {
 };
 
 /*
- * 60Hz reuses the 90Hz pixel clock AND horizontal/line timing unchanged --
- * the panel's internal line latch is tuned for that line rate, and dropping
- * the clock for 60Hz (the old "* 60") changed the per-line DSI rate, which
- * made the right ~1/4 of every line flicker. Instead reach 60Hz purely by
- * padding vertical blanking:  vtotal = clock / (htotal * 60)
- *   = 133292kHz / (1168 * 60) ~= 1902 lines  (vs 1268 at 90Hz).
- * Only the vertical blank grows; every horizontal/line parameter is byte-for-
- * byte identical to the known-good 90Hz mode.
+ * 60Hz attempt: keep the working 90Hz pixel clock (133292kHz -> 100MHz DSI
+ * byte clock) and the safe 90Hz vtotal (1268), and lower the refresh by
+ * WIDENING horizontal blanking. (Padding vertical blanking instead blanked
+ * the panel entirely; down-clocking for 60Hz glitched the right edge.)
+ *   htotal = clock / (refresh * vtotal) = 133292k / (60 * 1268) ~= 1752
+ * The extra blanking goes mostly to the front porch, giving the panel more
+ * time to latch the end of each line (the right-edge that was failing).
  */
-#define _AMOLED_VTOTAL_60 1902
+#define _AMOLED_HFP_60 332	/* 1080 + 332 + 8 + 332 = 1752 = htotal */
+#define _AMOLED_HBP_60 332
 static const struct drm_display_mode visionox_vtdr6110_mode_60 = {
 	.clock = (_AMOLED_HDISPLAY + _AMOLED_HFP + _AMOLED_HSYNC + _AMOLED_HBP) * (_AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC + _AMOLED_VBP) * _AMOLED_REFRESH_RATE / 1000,
 	.hdisplay = _AMOLED_HDISPLAY,
-	.hsync_start = _AMOLED_HDISPLAY + _AMOLED_HFP,
-	.hsync_end = _AMOLED_HDISPLAY + _AMOLED_HFP + _AMOLED_HSYNC,
-	.htotal = _AMOLED_HDISPLAY + _AMOLED_HFP + _AMOLED_HSYNC + _AMOLED_HBP,
+	.hsync_start = _AMOLED_HDISPLAY + _AMOLED_HFP_60,
+	.hsync_end = _AMOLED_HDISPLAY + _AMOLED_HFP_60 + _AMOLED_HSYNC,
+	.htotal = _AMOLED_HDISPLAY + _AMOLED_HFP_60 + _AMOLED_HSYNC + _AMOLED_HBP_60,
 	.vdisplay = _AMOLED_VDISPLAY,
 	.vsync_start = _AMOLED_VDISPLAY + _AMOLED_VFP,
 	.vsync_end = _AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC,
-	.vtotal = _AMOLED_VTOTAL_60,
+	.vtotal = _AMOLED_VDISPLAY + _AMOLED_VFP + _AMOLED_VSYNC + _AMOLED_VBP,
 	.width_mm = 65,
 	.height_mm = 75,
 };
