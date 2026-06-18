@@ -1,5 +1,29 @@
 #!/bin/bash
 
+# ---------------------------------------------------------------------------
+# Dependencies. The driver rebuilds its out-of-tree kernel modules on every
+# kernel bump (build.sh), and the button service shells out to a few userspace
+# tools at runtime. Install both up front so the first build + first boot work.
+#
+#   build-essential      gcc + make — compile pibrickbtn and the kernel modules
+#   linux-headers-*      kbuild tree for the running kernel; without it `make`
+#                        in battery/hyn_driver_release_qm/amoled has no
+#                        /lib/modules/$(uname -r)/build to build against
+#   device-tree-compiler dtc — Makefile 'amoled' target compiles the DSI .dtbo
+#   gpiod                gpiomon/gpioget — pibrickbtn polls the buttons via these
+#   evemu-tools          evemu-event — power-short.sh injects KEY_POWER
+#   wlr-randr            wlr-randr — optional wlroots display-toggle action script
+# ---------------------------------------------------------------------------
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y \
+	build-essential \
+	linux-headers-"$(uname -r)" \
+	device-tree-compiler \
+	gpiod \
+	evemu-tools \
+	wlr-randr
+
 # Install piBrick autoBuild Kernel Modules + Button Service
 mkdir -p /usr/lib/pibrick/
 cp -rf ./* /usr/lib/pibrick/
